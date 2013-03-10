@@ -46,7 +46,7 @@
 int main(int argc, char **argv) {
 	int fd;
 	void *map_base, *virt_addr;
-	unsigned long read_result, writeval;
+	unsigned long long read_result, writeval;
 	char *filename;
 	off_t target;
 	int access_type = 'w';
@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "\nUsage:\t%s { sys file } { offset } [ type [ data ] ]\n"
 			"\tsys file: sysfs file for the pci resource to act on\n"
 			"\toffset  : offset into pci memory region to act upon\n"
-			"\ttype    : access operation type : [b]yte, [h]alfword, [w]ord\n"
+			"\ttype    : access operation type : [b]yte, [h]alfword(2 bytes), [w]ord (4bytes), [d]double word(8 bytes)\n"
 			"\tdata    : data to be written\n\n",
 			argv[0]);
 		exit(1);
@@ -89,6 +89,9 @@ int main(int argc, char **argv) {
 			read_result = *((unsigned short *) virt_addr);
 			break;
 		case 'w':
+			read_result = *((unsigned int *) virt_addr);
+			break;
+		case 'd':
 			read_result = *((unsigned long *) virt_addr);
 			break;
 		default:
@@ -110,9 +113,17 @@ int main(int argc, char **argv) {
 				read_result = *((unsigned short *) virt_addr);
 				break;
 			case 'w':
+				*((unsigned int *) virt_addr) = writeval;
+				read_result = *((unsigned int *) virt_addr);
+				break;
+			case 'd':
 				*((unsigned long *) virt_addr) = writeval;
 				read_result = *((unsigned long *) virt_addr);
 				break;
+			default:
+				fprintf(stderr, "Illegal data type '%c'.\n", access_type);
+				exit(2);
+
 		}
 		printf("Written 0x%X; readback 0x%X\n", writeval, read_result);
 		fflush(stdout);
